@@ -19,9 +19,9 @@ RUN pip install \
     pyspark==3.3.2 \
     apache-airflow-providers-apache-spark \
     requests==2.31 \
-    pandas==1.2.4 \
+    #pandas==2.2.1 \
     apache-airflow-providers-slack==8.4.0 \
-    great-expectations==0.16.13 \
+    great-expectations==0.16.13 pandas\
     sqlalchemy-bigquery==1.6.1
 
 COPY --chown=airflow:root ./dags /opt/airflow/dags
