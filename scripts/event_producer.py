@@ -16,40 +16,38 @@ kafka_host = os.getenv("KAFKA_HOST")
 kafka_topic = os.getenv("KAFKA_TOPIC_NAME")
 
 producer = KafkaProducer(bootstrap_servers=f"{kafka_host}:9092")
+_instance = Faker()
+global faker
 faker = Faker()
 
+import uuid
+from faker import Faker
+import json
+from time import sleep
 
-class DataGenerator(object):
+class PurchaseEventProducer(object):
     @staticmethod
-    def get_data():
-        now = datetime.now()
-        return [
-            uuid.uuid4().__str__(),
-            faker.random_int(min=1, max=100),
-            faker.random_element(elements=("Chair", "Table", "Desk", "Sofa", "Bed")),
-            faker.safe_color_name(),
-            faker.random_int(min=100, max=150000),
-            faker.unix_time(
-                start_datetime=now - timedelta(minutes=60), end_datetime=now
-            ),
-        ]
+    def generate_purchase_event():
+        faker = Faker()
+        products = ['Product A', 'Product B', 'Product C']
+        return {
+            'transaction_id': str(uuid.uuid4()),
+            'timestamp': faker.unix_time(),
+            'product': faker.random_element(elements=products),
+            'amount': faker.random_int(min=1, max=100),
+            'customer_id': faker.random_number(digits=6)
+        }
 
+# Initialize Kafka producer
+producer = KafkaProducer(bootstrap_servers=f'{kafka_host}:9092')
 
-while True:
-    columns = [
-        "order_id",
-        "customer_id",
-        "furniture",
-        "color",
-        "price",
-        "ts",
-    ]
-    data_list = DataGenerator.get_data()
-    json_data = dict(zip(columns, data_list))
-    _payload = json.dumps(json_data).encode("utf-8")
-    print(_payload, flush=True)
-    print("=-" * 5, flush=True)
-    response = producer.send(topic=kafka_topic, value=_payload)
-    print(response.get())
-    print("=-" * 20, flush=True)
-    sleep(3)
+# Define Kafka topic
+kafka_topic_partition = 'purchase_topic'
+
+# Send purchase events to Kafka topic
+for i in range(1, 400):
+    event_data = PurchaseEventProducer.generate_purchase_event()
+    _payload = json.dumps(event_data).encode("utf-8")
+    response = producer.send(topic=kafka_topic_partition, value=_payload)
+    print(f"Sent message: {event_data['transaction_id']}, response: {response.get()}")
+    sleep(10)
